@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('user_services', function (Blueprint $table) {
             $table->id();
-            $table->string('username')->unique();
-            $table->string('company_name')->nullable();
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->boolean('reset_password')->default(true);
-            $table->rememberToken();
+            $table->foreignId('user_id')->constrained();
+            $table->foreignId('service_module_id')->constrained();
+            $table->foreignId('service_category_id')->constrained();
+            $table->string('stage');
+            $table->date('due_date');
+            $table->string('status');
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('user_services');
     }
 };
