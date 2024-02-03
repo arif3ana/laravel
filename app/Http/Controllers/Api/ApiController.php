@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -23,6 +24,8 @@ class ApiController extends Controller
             $loginField => $request->username_or_email,
             'password' => $request->password,
         ];
+
+        // $user = User::where($loginField, $request->username_or_email)->first();
         
 
         if(Auth::attempt($credentials)) {
@@ -58,6 +61,70 @@ class ApiController extends Controller
     }
 
     public function InvoiceTable(Request $request)
+    {
+        // $user = $request->user();
+        $userInvoices = Invoice::with('invoice_item');
+
+        $filterInvoiceDate = $request->input('date');
+        if ($filterInvoiceDate) {
+            $userInvoices->whereDate('created_at', $filterInvoiceDate);
+        }
+
+        $filterStatus = $request->input('status');
+        if ($filterStatus) {
+            $userInvoices->filterStatus($filterStatus);
+        }
+
+        // search
+        $searchInvoiceCode = $request->input('search');
+        if ($searchInvoiceCode) {
+            $userInvoices->where('invoice_code', 'like', '%' . $searchInvoiceCode . '%');
+        }
+
+        // pagination 
+        $userInvoice = $userInvoices->limit(5)->latest();
+        $perPage =  5;
+        $userInvoicePaginate = $userInvoice->paginate($perPage);
+
+        $response = [
+            'perPage' => $userInvoicePaginate->perPage(),
+            'total_data' => $userInvoicePaginate->total(),
+            'total_pages' => $userInvoicePaginate->lastPage(),
+            'current_page' => $userInvoicePaginate->currentPage(),
+            'from' => $userInvoicePaginate->firstItem(),
+            'to' => $userInvoicePaginate->lastItem(),
+            'data' => [],
+        ];
+
+        foreach ($userInvoicePaginate as $item) {
+            $response['data'][] = [
+                'id' => $item->id,
+                'user_service_id' => $item->user_service_id,
+                'invoice_code' => $item->invoice_code,
+                'due_date' => $item->due_date,
+                'status' => $item->status,
+                'created_at' => $item->created_at,
+                'invoice_item' => $item->invoice_item->map(function ($invoiceItem) {
+                    return [
+                        'id' => $invoiceItem->id,
+                        'invoice_id' => $invoiceItem->invoice_id,
+                        'item_name' => $invoiceItem->item_name,
+                        'price' => $invoiceItem->price,
+                    ];
+                })->toArray(),
+            ];
+        }
+
+        return response()->json([
+            'httpStatus' => 200,
+            'status' => 'success',
+            'message' => 'succes di tampilkan',
+            'data' => $response
+        ], 200);
+
+    }
+
+    public function InvoiceList(Request $request)
     {
         $user = $request->user();
         $userInvoices = Invoice::with('invoice_item')->where('user_id', $user->id);
@@ -118,8 +185,5 @@ class ApiController extends Controller
             'message' => 'succes di tampilkan',
             'data' => $response
         ], 200);
-
-
-        // return new ResResource(httpStatus: 200, status: 'success', message: "succes di tampilkan", resource: $response);
     }
 }

@@ -17,5 +17,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/v1/login', [ApiController::class, 'login']);
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('/v1/invoice', [ApiController::class, 'InvoiceTable']);
+    Route::get('/v1/invoice', [ApiController::class, 'InvoiceList']);
 });
